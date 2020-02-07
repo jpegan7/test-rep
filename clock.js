@@ -69,8 +69,27 @@ function setTimer(){
 function runTimer(){
     var hrs, mins, secs;
     if(run){
-        secs = tSeconds.innerHTML-1;
+        secs = tSeconds.innerHTML;
+        mins = tMinutes.innerHTML;
+        hrs = tHours.innerHTML;
+
+        if(secs == 0){
+            if(mins == 0){
+                if(hrs == 0){
+                    run=false;
+                }else{
+                    hrs--;
+                    mins=59;
+                    secs=59;
+                } 
+            }else{
+                mins--;
+                secs=59;
+            }
+        }else{
+            secs--;
+        }
         
-        updateTimer(hours.value, minutes.value, secs);
+        updateTimer(hrs, mins, secs);
     }
 }
