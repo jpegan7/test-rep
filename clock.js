@@ -1,15 +1,17 @@
 document.getElementById("setTimer").onclick = function() {setTimer()};
+document.getElementById("reset").onclick = function() {reset()};
 
 let run = false;
 var intervalID = window.setInterval(runTimer, 1000);
 
 //Time that is entered
 let hours = document.getElementById('hrs');
-let minutes = document.getElementById('mins');
-let seconds = document.getElementById('secs');
-
 hours.onkeydown = function(e) {clearLeadingZeroes(hours); return isPositive(e) && isntTooBig(hours,e, 99);}
+
+let minutes = document.getElementById('mins');
 minutes.onkeydown = function(e) {clearLeadingZeroes(minutes); return isPositive(e) && isntTooBig(minutes,e, 59);}
+
+let seconds = document.getElementById('secs');
 seconds.onkeydown = function(e) {clearLeadingZeroes(seconds); return isPositive(e) && isntTooBig(seconds,e, 59);}
 
 
@@ -19,11 +21,8 @@ let tMinutes = document.getElementById('tmins');
 let tSeconds = document.getElementById('tsecs');
 
 
-
 function clearLeadingZeroes(num){
      var number = num.value;
-    // number = number.toString();
-    //  parseInt(number, 10);
      number = number.replace(/^0+/, '');
     num.value = number;
 }
@@ -51,7 +50,21 @@ function isntTooBig(num, e, max){
 
 }
 
+//converts to a number and converts it to a string and adds 
+//a leading zero to numbers if they are < 10
+function addLeadZero(num){
+    num = num.toString();
+    if(num<10)    
+        num = "0" + num;
+
+    return num;
+}
+
 function updateTimer(hrs, mins, secs){
+    hrs = addLeadZero(hrs);
+    mins = addLeadZero(mins);
+    secs = addLeadZero(secs);
+
     tHours.innerHTML = hrs;
     tMinutes.innerHTML = mins;
     tSeconds.innerHTML = secs;
@@ -61,6 +74,7 @@ function setTimer(){
     if(!hours.value) hours.value= 0;
     if(!minutes.value) minutes.value= 0;
     if(!seconds.value) seconds.value= 0;
+
     updateTimer(hours.value, minutes.value, seconds.value);
 
     run = true;
@@ -69,9 +83,9 @@ function setTimer(){
 function runTimer(){
     var hrs, mins, secs;
     if(run){
-        secs = tSeconds.innerHTML;
-        mins = tMinutes.innerHTML;
-        hrs = tHours.innerHTML;
+        secs = parseInt(tSeconds.innerHTML);
+        mins = parseInt(tMinutes.innerHTML);
+        hrs = parseInt(tHours.innerHTML);
 
         if(secs == 0){
             if(mins == 0){
@@ -92,4 +106,15 @@ function runTimer(){
         
         updateTimer(hrs, mins, secs);
     }
+}
+
+function reset(){
+    hours.value = 0;
+    minutes.value=0;
+    secs.value=0;
+    run = false;
+    
+    tHours.innerHTML = "00";
+    tMinutes.innerHTML = "00";
+    tSeconds.innerHTML = "00";
 }
