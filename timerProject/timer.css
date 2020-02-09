@@ -1,0 +1,10 @@
+.home{
+    float: left;
+    margin-left: 5px;
+    margin-top: -5px;
+}
+
+body{
+    float: center;
+    text-align:center;
+}

@@ -1,6 +1,9 @@
 document.getElementById("setTimer").onclick = function() {setTimer()};
 document.getElementById("reset").onclick = function() {reset()};
 
+let pButton = document.getElementById("pausePlay");
+pButton.onclick = function() {changePlayState()};
+
 let run = false;
 var intervalID = window.setInterval(runTimer, 1000);
 
@@ -105,6 +108,21 @@ function runTimer(){
         }
         
         updateTimer(hrs, mins, secs);
+    }
+}
+
+function changePlayState(){
+    var hrs = parseInt(tHours.innerHTML);
+    var mins = parseInt(tMinutes.innerHTML);
+    var secs = parseInt(tSeconds.innerHTML);
+
+    if(hrs + mins + secs){
+        run = !run;
+        if(run){
+            pButton.value = "Pause";
+        }else{
+            pButton.value = "Play";
+        }
     }
 }
 
