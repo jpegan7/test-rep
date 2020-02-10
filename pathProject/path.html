@@ -3,16 +3,18 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
-    <title>Jack's Site - Home</title>
+    <title>Jack's Site - Pathfinder</title>
     <link href="path.css" rel="stylesheet" type="text/css" />
   </head>
   
   <body>
-    <canvas id="window">
+    <canvas id="window"></canvas>
 
+    <input type="button" id="node" class="under" value="Place Node">
+    <input type="button" id="wall" class="under" value="Place Wall">
+    <input type="button" id="flag" class="under" value="Place Flag">
 
-    </canvas>
-    <script src="grid.js"></script> 
-    <script src="pathScript.js"></script>    
+    <script src="./src/grid.js"></script> 
+    <script src="./src/pathScript.js"></script>    
   </body>
 </html>
