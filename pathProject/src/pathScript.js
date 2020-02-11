@@ -8,7 +8,7 @@ var ctx = canvas.getContext("2d");
 
 canvas.width =1200;
 canvas.height = 600;
-const NUM_COLUMNS = 100;
+const NUM_COLUMNS = 200;
 const NUM_ROWS = Math.floor(NUM_COLUMNS/(canvas.width/canvas.height));;
 
 const CELL_WIDTH = Math.floor(canvas.width / NUM_COLUMNS);
@@ -33,7 +33,30 @@ nButton.onclick = function() {gameField.mode=1};
 let fButton = document.getElementById("flag");
 fButton.onclick = function() {gameField.mode=2;};
 
+let sButton = document.getElementById("start");
+sButton.onclick = function() {startSearch(newbfs)};
 
+let rButton = document.getElementById("reset");
+rButton.onclick = function(){
+    gameField.reset(); 
+    nodes = new Array(); 
+    pathQueue = new Array(); 
+    clearInterval(id);
+    searchHasStarted = false;
+    displayGrid()
+};
+
+
+class Path {
+    constructor(index, prev) {
+        this.index = index;
+        this.prev = prev;
+    }
+}
+
+
+
+let searchHasStarted = false;
 
 let heldDown = false;
 let button = 0;
@@ -41,7 +64,8 @@ let button = 0;
 function mouseDown(e){
     button = e.button;
     heldDown = true;
-    draw(e);
+    if(!searchHasStarted)
+        draw(e);
 }
 
 function mouseUp(e){
@@ -50,7 +74,7 @@ function mouseUp(e){
 
 window.addEventListener('mousedown', mouseDown);
 window.addEventListener('mouseup', mouseUp);
-window.addEventListener('mousemove', function(e){if(gameField.mode==0) draw(e)});
+window.addEventListener('mousemove', function(e){if(!searchHasStarted && gameField.mode==0) draw(e)});
 
 
 function draw(e) {
@@ -77,6 +101,9 @@ function draw(e) {
 }
  
 
+function getIndex(i,j){
+    return i*NUM_COLUMNS+j;
+}
 
 /**
  * Returns coordinates for top left corner of cell at i, j
@@ -100,7 +127,7 @@ function getIndicesFromCoord(x,y){
 
 function getIndicesFromIndex(index){
 
-    console.log("index: " +index);
+ //   console.log("index: " +index);
     var i =Math.floor(index/(NUM_COLUMNS));
     var j =index - i * NUM_COLUMNS; 
 
@@ -111,7 +138,7 @@ function getIndicesFromIndex(index){
 function displayGrid(){
     //clear screen
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
+    console.log("called");
     //draw screen
     var cur;
     var coord;
@@ -120,14 +147,16 @@ function displayGrid(){
           cur = gameField.grid[getIndex(i,j)];
           if(cur){
             coord = getCoordFromIndices(i,j);
-            if(cur == 1)
+            if(cur == 1) // Walls
                 ctx.fillStyle = "#000000";
-            else if(cur == 2)
+            else if(cur == 2) // Beginning search node
                 ctx.fillStyle = "#FF5733";
-            else if(cur == 3)
+            else if(cur == 3) // Flag
                 ctx.fillStyle = "#0080FF";
-            else if(cur==4)
+            else if(cur==4) // Search nodes
                 ctx.fillStyle = "#FFFF33";
+            else if(cur==5) // Final path
+                ctx.fillStyle = "#68FF33";
             
             ctx.fillRect(coord[0], coord[1], CELL_WIDTH, CELL_HEIGHT);
             }
@@ -135,28 +164,58 @@ function displayGrid(){
     }
 }
 
-function getIndex(i,j){
-    return i*NUM_COLUMNS+j;
+function displayPath(path){
+    var current = gameField.finalPath;
+
+    while(current.prev!=null){
+       // console.log(current);
+        gameField.grid[current.index] = 5;
+        current = current.prev;
+    }
+
+    displayGrid();
+
 }
 
 
-function visitCell(i,j){
+let id;
+let pathQueue =  new Array();
 
-    // console.log("columns: " + NUM_COLUMNS + ", rows: " + NUM_ROWS);
-    // console.log("indices " +i +", " + j);
+function startSearch(alg){
+    if(searchHasStarted) return;
+    searchHasStarted = true;
+    pathQueue.push(new Path(gameField.startNodeIndex, null));
+    if(gameField.startNodeIndex != -1 && gameField.flagIndex != -1)
+        id = setInterval(alg, .0001);
+
+}
+
+function displayNewNode(i,j){
+
+    var coords = getCoordFromIndices(i,j)
+
+    ctx.fillStyle = "#FFFF33";
+    ctx.fillRect(coords[0], coords[1], CELL_WIDTH, CELL_HEIGHT);
+    
+}
+
+function newVisitCell(i,j,path){
 
     if(i >= 0 && i <= NUM_ROWS-1 && j >= 0 && j <= NUM_COLUMNS-1){
-        var cell = gameField.grid[getIndex(i,j)];
+        var index =getIndex(i,j);
+        var cell = gameField.grid[index];
     
         if(cell == 3){
             clearInterval(id);
             displayGrid();
-            alert("Found it!");
+            //alert("Found it!");
+            gameField.finalPath = path;
+            displayPath();
             return true; 
         }else if(cell == 0){
-            gameField.grid[getIndex(i,j)] = 4;
-           // console.log("visited:" + getIndex(i,j) + " cell="+cell);
-            displayGrid();
+            gameField.grid[index] = 4;
+            pathQueue.unshift(new Path(index, path));
+            displayNewNode(i,j);
             return false;
 
         }
@@ -164,53 +223,28 @@ function visitCell(i,j){
     return false;
 }
 
-let id;
+let nodes = new Array();
 
-function startSearch(alg){
-     id = setInterval(alg, 100);
-}
-
-var nodes = new Array();
-
-function bfs(startIndex){
-    var tempIndex;
-    var newNodes = new Array();
-
-    newNodes.push(startIndex);
-
-    for(var i=0; i < NUM_COLUMNS*NUM_ROWS; i++){
-        if(gameField.grid[i] == 4) newNodes.push(i);
-    }
-
+function newbfs(){
+    var path = pathQueue.pop();
     
-    //filter out nodes we've already checked
-    newNodes = newNodes.filter(num => !nodes.includes(num));
+    var index = path.index;
 
-    nodes = nodes.concat(newNodes);
+    nodes.push(index);
 
-    if (newNodes.length == 0){
-        clearInterval(id);
-    }else{
-        //Check for flag
-        for(var k=0; k< newNodes.length; k++){
-            tempIndex = newNodes[k];
-            //check if inside grid
-            var indices = getIndicesFromIndex(tempIndex);
-            var i = indices[0];
-            var j = indices[1];
-                //check above
-                if (visitCell(i-1, j)) return true;
-
-                //check beside
-                if (visitCell(i,j-1)) return true;
-                if (visitCell(i,j+1)) return true;
-            
-                //check below
-                if (visitCell(i+1,j)) return true;
-        
-            }
-    }
-
+    var indices = getIndicesFromIndex(index);
+    var i = indices[0];
+    var j = indices[1];
     
-}
+    //check above
+    if (newVisitCell(i-1, j, path)) return true;
 
+    //check right
+    if (newVisitCell(i, j+1, path)) return true;
+
+        //check below
+    if (newVisitCell(i+1, j, path)) return true;
+    
+    //check left
+    if (newVisitCell(i,j-1, path)) return true;
+}

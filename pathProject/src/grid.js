@@ -10,6 +10,10 @@ class Grid{
         this.startNodeIndex = -1;
         this.flagIndex = -1;
 
+        this.searchHasStarted = false;
+
+        this.finalPath = null;
+
     }
 
     setUpGrid(g){
@@ -60,5 +64,15 @@ class Grid{
 
         this.grid[i*this.columns+j] = 0;
         
+    }
+
+    reset(){
+        this.startNodeIndex = -1;
+        this.flagIndex = -1;
+        this.finalPath = null;
+        
+        this.grid = this.grid.map(y => 0);
+
+
     }
 } 
