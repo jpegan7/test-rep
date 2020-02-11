@@ -1,4 +1,7 @@
-// import {Grid} from 'grid'
+
+
+//vertical space above canvas
+let margin = 10; 
 
 //prevents right click menus
 document.addEventListener('contextmenu', event => event.preventDefault());
@@ -8,7 +11,7 @@ var ctx = canvas.getContext("2d");
 
 canvas.width =1200;
 canvas.height = 600;
-const NUM_COLUMNS = 200;
+const NUM_COLUMNS = 100;
 const NUM_ROWS = Math.floor(NUM_COLUMNS/(canvas.width/canvas.height));;
 
 const CELL_WIDTH = Math.floor(canvas.width / NUM_COLUMNS);
@@ -19,7 +22,7 @@ canvas.width = NUM_COLUMNS*CELL_WIDTH;
 canvas.height = NUM_ROWS*CELL_HEIGHT;
 
 const MOUSE_X_OFFSET = (window.innerWidth - canvas.width) / 2;
-const MOUSE_Y_OFFSET = 0;//(window.innerHeight - canvas.height) / 2;
+const MOUSE_Y_OFFSET = margin;//(window.innerHeight - canvas.height) / 2;
 
 
 let gameField = new Grid(NUM_COLUMNS, NUM_ROWS);
@@ -34,13 +37,14 @@ let fButton = document.getElementById("flag");
 fButton.onclick = function() {gameField.mode=2;};
 
 let sButton = document.getElementById("start");
-sButton.onclick = function() {startSearch(newbfs)};
+sButton.onclick = function() {if(gameField.flagIndex  !=-1 && gameField.startNodeIndex != -1)startSearch(newbfs)};
 
 let rButton = document.getElementById("reset");
 rButton.onclick = function(){
     gameField.reset(); 
     nodes = new Array(); 
     pathQueue = new Array(); 
+    pathQueueCurrent = new Array();
     clearInterval(id);
     searchHasStarted = false;
     displayGrid()
@@ -118,7 +122,7 @@ function getCoordFromIndices(i,j){
 
 function getIndicesFromCoord(x,y){
     x = x - MOUSE_X_OFFSET;
-    y = y-MOUSE_Y_OFFSET;
+    y = y - MOUSE_Y_OFFSET;
 
     var j = x/CELL_WIDTH;
     var i = y/CELL_HEIGHT;
@@ -180,13 +184,14 @@ function displayPath(path){
 
 let id;
 let pathQueue =  new Array();
+let pathQueueCurrent = new Array();
 
 function startSearch(alg){
     if(searchHasStarted) return;
     searchHasStarted = true;
     pathQueue.push(new Path(gameField.startNodeIndex, null));
     if(gameField.startNodeIndex != -1 && gameField.flagIndex != -1)
-        id = setInterval(alg, .0001);
+        id = setInterval(alg, 10);
 
 }
 
@@ -212,10 +217,15 @@ function newVisitCell(i,j,path){
             gameField.finalPath = path;
             displayPath();
             return true; 
+
         }else if(cell == 0){
             gameField.grid[index] = 4;
-            pathQueue.unshift(new Path(index, path));
+
+            //add new possible path
+            pathQueueCurrent.unshift(new Path(index, path));
+
             displayNewNode(i,j);
+
             return false;
 
         }
@@ -226,25 +236,39 @@ function newVisitCell(i,j,path){
 let nodes = new Array();
 
 function newbfs(){
-    var path = pathQueue.pop();
+    var path;
+    var index;
+    var i;
+    var j;
+   
+   
+   while(pathQueue.length > 0){
     
-    var index = path.index;
-
-    nodes.push(index);
-
-    var indices = getIndicesFromIndex(index);
-    var i = indices[0];
-    var j = indices[1];
+        path = pathQueue.pop();
     
-    //check above
-    if (newVisitCell(i-1, j, path)) return true;
+        index = path.index;
+    
+        nodes.push(index);
+    
+        indices = getIndicesFromIndex(index);
+        i = indices[0];
+        j = indices[1];
 
-    //check right
-    if (newVisitCell(i, j+1, path)) return true;
+        //check above
+        if (newVisitCell(i-1, j, path)) return true;
+
+        //check right
+        if (newVisitCell(i, j+1, path)) return true;
 
         //check below
-    if (newVisitCell(i+1, j, path)) return true;
+        if (newVisitCell(i+1, j, path)) return true;
     
-    //check left
-    if (newVisitCell(i,j-1, path)) return true;
+         //check left
+        if (newVisitCell(i,j-1, path)) return true;
+    }
+
+    //pathQueue = pathQueueCurrent.slice(0, pathQueueCurrent.length);               //check if we can just do = instead of copying
+    pathQueue = pathQueueCurrent;
+    pathQueueCurrent = new Array();
+
 }

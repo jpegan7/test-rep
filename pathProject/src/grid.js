@@ -58,8 +58,8 @@ class Grid{
     removeAt(i,j){
         var val = this.grid[i*this.columns+j];
 
-        if(val == 2) this.hasStartNode = false;
-        else if(val == 3) this.hasFlag = false;
+        if(val == 2) this.startNodeIndex = -1;
+        else if(val == 3) this.flagIndex= -1;
 
 
         this.grid[i*this.columns+j] = 0;
