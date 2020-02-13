@@ -21,6 +21,7 @@ class Grid{
         return g;
     }
 
+
     //Dynamically chooses what to place
     placeAt(i,j){
         if(this.mode==0)

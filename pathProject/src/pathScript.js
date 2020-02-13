@@ -75,7 +75,6 @@ let searchHasStarted = false;
 let animationSpeed = 10;
 let intervalID;
 
-
 let heldDown = false;
 let button = 0;
 
@@ -90,6 +89,7 @@ function mouseDown(e){
     if(!searchHasStarted)
         draw(e);
 }
+
 
 function mouseUp(e){
     heldDown = false;
@@ -113,7 +113,6 @@ class Path {
 
     }
 }
-
 
 
 function draw(e) {
@@ -144,16 +143,13 @@ function getIndex(i,j){
     return i*NUM_COLUMNS+j;
 }
 
-/**
- * Returns coordinates for top left corner of cell at i, j
- * @param {*} i 
- * @param {*} j 
- */
+
 function getCoordFromIndices(i,j){
     var x = j * CELL_WIDTH;
     var y = i * CELL_HEIGHT;
     return [x,y];
 }
+
 
 function getIndicesFromCoord(x,y){
     x = x - MOUSE_X_OFFSET;
@@ -163,6 +159,7 @@ function getIndicesFromCoord(x,y){
     var i = y/CELL_HEIGHT;
     return [i,j];
 }
+
 
 function getIndicesFromIndex(index){
 
@@ -202,6 +199,7 @@ function displayGrid(){
     }
 }
 
+
 function displayPath(path){
     var current = gameField.finalPath;
 
@@ -213,6 +211,7 @@ function displayPath(path){
     displayGrid();
 
 }
+
 
 function startSearch(){
     var arg;
@@ -232,6 +231,7 @@ function startSearch(){
 
 }
 
+
 function displayNewNode(i,j){
 
     var coords = getCoordFromIndices(i,j)
@@ -241,9 +241,16 @@ function displayNewNode(i,j){
     
 }
 
+//can be updated to include diagonal neighbors
+function getNeighborIndices(i,j){
+    return [[i-1,j],[i,j+1],[i+1,j],[i,j-1]];
+}
+
+
 function cellIsValid(i,j){
     return (i >= 0 && i <= NUM_ROWS-1 && j >= 0 && j <= NUM_COLUMNS-1 && !nodes.includes(getIndex(i,j)) && gameField.grid[getIndex(i,j)]!=1);
 }
+
 
 function visitCell(i,j,path){
 
@@ -286,38 +293,20 @@ function bfs(){
 
     if(visitCell(i,j,path)) return true;
 
-    var neighborIndex;
+    var nIndex;
+    var neighbors = getNeighborIndices(i,j);
 
-     //Check Up
-    neighborIndex = getIndex(i-1,j);
-    if(cellIsValid(i-1,j)){
-        pathSet.unshift(new Path(neighborIndex, path));
-        nodes.push(neighborIndex);
-    }    
-     //Check Right
-    neighborIndex = getIndex(i,j+1);
-    if(cellIsValid(i,j+1)){
-        pathSet.unshift(new Path(neighborIndex, path));
-        nodes.push(neighborIndex);
-    }
+    //Check all neighbors
+    for(nIndices of neighbors){
+        if(cellIsValid(nIndices[0], nIndices[1])){
+            nIndex = getIndex(nIndices[0], nIndices[1]);
+            pathSet.unshift(new Path(nIndex, path));
+            nodes.push(nIndex);
+        }
 
-    //Check Down
-    neighborIndex = getIndex(i+1,j);
-    if(cellIsValid(i+1,j)){
-        pathSet.unshift(new Path(neighborIndex, path));
-        nodes.push(neighborIndex);
-    }
-
-    //Check Left
-    neighborIndex = getIndex(i,j-1);
-    if(cellIsValid(i,j-1)){
-        pathSet.unshift(new Path(getIndex(i,j-1), path));
-        nodes.push(neighborIndex);
     }
    
 }
-
-
 
 
 function dfs(){
@@ -345,22 +334,52 @@ function dfs(){
 
     if(visitCell(i,j,path)) return true;
 
-    //Check Left
-    if(cellIsValid(i,j-1))
-        pathSet.push(new Path(getIndex(i,j-1), path));
 
-    //Check Down
-    if(cellIsValid(i+1,j))
-        pathSet.push(new Path(getIndex(i+1,j), path));
+    var nIndex;
+    var neighbors = getNeighborIndices(i,j).reverse();
+    
+    //Check all neighbors
+    for(nIndices of neighbors){
+        if(cellIsValid(nIndices[0], nIndices[1])){
+            nIndex = getIndex(nIndices[0], nIndices[1]);
+            pathSet.push(new Path(nIndex, path));
+        }
+        
+    }
 
-    //Check Right
-    if(cellIsValid(i,j+1))
-        pathSet.push(new Path(getIndex(i,j+1), path));
+}
 
 
-    //Check Up
-    if(cellIsValid(i-1,j))
-        pathSet.push(new Path(getIndex(i-1,j), path));
+function getCost(i1,j1,i2,j2){
+    return Math.abs(i1 - i2) + Math.abs(j1 - j2);
+}
+
+function aStar(){
+    if(pathSet.length == 0){
+        clearInterval(intervalID);
+        return false;
+    }
+
+    var path = pathSet.pop();
+
+    var thisIndex = path.thisIndex;
+
+    var thisIndices = getIndicesFromIndex(thisIndex);
+
+    var i = thisIndices[0];
+    var j = thisIndices[1];
+
+    var startIndices = getIndicesFromIndex(gameField.startNodeIndex);
+    var si = startIndices[0];
+    var sj = startIndices[1];
+
+    var startIndices = getIndicesFromIndex(gameField.flagIndex);
+    var fi = startIndices[0];
+    var fj = startIndices[1];
+
+    var fCost;
+
+
 
 }
 
