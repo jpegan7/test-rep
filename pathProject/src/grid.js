@@ -10,8 +10,6 @@ class Grid{
         this.startNodeIndex = -1;
         this.flagIndex = -1;
 
-        this.searchHasStarted = false;
-
         this.finalPath = null;
 
     }
@@ -70,9 +68,18 @@ class Grid{
         this.startNodeIndex = -1;
         this.flagIndex = -1;
         this.finalPath = null;
-        
-        this.grid = this.grid.map(y => 0);
 
+        this.grid = this.grid.map(y => 0);
+    
+    }
+
+    clearSearch(){
+        console.log("WTF EPIC SAWSE");
+        for(var index = 0; index< this.rows*this.columns; index++)
+            if(this.grid[index] == 4 || this.grid[index] == 5) this.grid[index] = 0; 
+        
+        
+        this.finalPath = null;
 
     }
 } 

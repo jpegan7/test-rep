@@ -1,5 +1,3 @@
-
-
 //vertical space above canvas
 let margin = 10; 
 
@@ -11,8 +9,9 @@ var ctx = canvas.getContext("2d");
 
 canvas.width =1200;
 canvas.height = 600;
+
 const NUM_COLUMNS = 100;
-const NUM_ROWS = Math.floor(NUM_COLUMNS/(canvas.width/canvas.height));;
+const NUM_ROWS = Math.floor(NUM_COLUMNS/(canvas.width/canvas.height));
 
 const CELL_WIDTH = Math.floor(canvas.width / NUM_COLUMNS);
 const CELL_HEIGHT = Math.floor(canvas.height / NUM_ROWS);
@@ -24,9 +23,8 @@ canvas.height = NUM_ROWS*CELL_HEIGHT;
 const MOUSE_X_OFFSET = (window.innerWidth - canvas.width) / 2;
 const MOUSE_Y_OFFSET = margin;//(window.innerHeight - canvas.height) / 2;
 
-
+//Create our grid
 let gameField = new Grid(NUM_COLUMNS, NUM_ROWS);
-
 
 //keep track of what type of object user wants to create
 let wButton = document.getElementById("wall");
@@ -36,34 +34,55 @@ nButton.onclick = function() {gameField.mode=1};
 let fButton = document.getElementById("flag");
 fButton.onclick = function() {gameField.mode=2;};
 
+//Define buttons
 let sButton = document.getElementById("start");
-sButton.onclick = function() {if(gameField.flagIndex  !=-1 && gameField.startNodeIndex != -1)startSearch(newbfs)};
+sButton.onclick = function() {if(gameField.flagIndex  !=-1 && gameField.startNodeIndex != -1)startSearch()};
 
 let rButton = document.getElementById("reset");
 rButton.onclick = function(){
     gameField.reset(); 
     nodes = new Array(); 
-    pathQueue = new Array(); 
-    pathQueueCurrent = new Array();
-    clearInterval(id);
+    pathSet = new Array(); 
+    pathSetCurrent = new Array();
     searchHasStarted = false;
+    numCellsVisited = 0;
+    
+    clearInterval(intervalID);
     displayGrid()
 };
 
+let cButton = document.getElementById("clear");
+cButton.onclick = function(){
+    gameField.clearSearch(); 
+    nodes = new Array(); 
+    pathSet = new Array(); 
+    pathSetCurrent = new Array();
+    searchHasStarted = false;
+    numCellsVisited = 0;
 
-class Path {
-    constructor(index, prev) {
-        this.index = index;
-        this.prev = prev;
-    }
-}
+    clearInterval(intervalID);
+    displayGrid()
+};
 
+//Dropdown menu to select the algorithm
+let algSelect = document.getElementById("algorithms");
 
+let numCellsVisited = 0;
+let nodes = new Array();
+let pathSet =  new Array();
 
 let searchHasStarted = false;
+let animationSpeed = 10;
+let intervalID;
+
 
 let heldDown = false;
 let button = 0;
+
+window.addEventListener('mousedown', mouseDown);
+window.addEventListener('mouseup', mouseUp);
+window.addEventListener('mousemove', function(e){if(!searchHasStarted && gameField.mode==0) draw(e)});
+
 
 function mouseDown(e){
     button = e.button;
@@ -76,9 +95,25 @@ function mouseUp(e){
     heldDown = false;
 }
 
-window.addEventListener('mousedown', mouseDown);
-window.addEventListener('mouseup', mouseUp);
-window.addEventListener('mousemove', function(e){if(!searchHasStarted && gameField.mode==0) draw(e)});
+
+class Path {
+    constructor(index, prev) {
+        this.index = index;
+        this.prev = prev;
+    }
+
+    getPathLength(){
+        var cur = this;
+        var count = 0;
+        while(cur.prev!=null){
+            cur = cur.prev;
+            count++;
+        }
+        return count;
+
+    }
+}
+
 
 
 function draw(e) {
@@ -131,7 +166,6 @@ function getIndicesFromCoord(x,y){
 
 function getIndicesFromIndex(index){
 
- //   console.log("index: " +index);
     var i =Math.floor(index/(NUM_COLUMNS));
     var j =index - i * NUM_COLUMNS; 
 
@@ -142,7 +176,7 @@ function getIndicesFromIndex(index){
 function displayGrid(){
     //clear screen
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    console.log("called");
+
     //draw screen
     var cur;
     var coord;
@@ -172,7 +206,6 @@ function displayPath(path){
     var current = gameField.finalPath;
 
     while(current.prev!=null){
-       // console.log(current);
         gameField.grid[current.index] = 5;
         current = current.prev;
     }
@@ -181,17 +214,21 @@ function displayPath(path){
 
 }
 
+function startSearch(){
+    var arg;
+    switch(algSelect.value){
+        case "bfs": alg = bfs;
+            break;
+        case "dfs": alg = dfs;
+            break;
+    }
 
-let id;
-let pathQueue =  new Array();
-let pathQueueCurrent = new Array();
-
-function startSearch(alg){
     if(searchHasStarted) return;
     searchHasStarted = true;
-    pathQueue.push(new Path(gameField.startNodeIndex, null));
+    pathSet.push(new Path(gameField.startNodeIndex, null));
+    nodes.push(gameField.startNodeIndex);
     if(gameField.startNodeIndex != -1 && gameField.flagIndex != -1)
-        id = setInterval(alg, 10);
+        intervalID = setInterval(alg, animationSpeed); 
 
 }
 
@@ -204,71 +241,194 @@ function displayNewNode(i,j){
     
 }
 
-function newVisitCell(i,j,path){
+function cellIsValid(i,j){
+    return (i >= 0 && i <= NUM_ROWS-1 && j >= 0 && j <= NUM_COLUMNS-1 && !nodes.includes(getIndex(i,j)) && gameField.grid[getIndex(i,j)]!=1);
+}
 
-    if(i >= 0 && i <= NUM_ROWS-1 && j >= 0 && j <= NUM_COLUMNS-1){
+function visitCell(i,j,path){
+
         var index =getIndex(i,j);
         var cell = gameField.grid[index];
+        numCellsVisited++;
     
         if(cell == 3){
-            clearInterval(id);
-            displayGrid();
-            //alert("Found it!");
-            gameField.finalPath = path;
+            clearInterval(intervalID);
+            gameField.finalPath = path.prev;
             displayPath();
+
+            document.getElementById("pathLength").innerHTML = path.getPathLength();
+            document.getElementById("totalCells").innerHTML = numCellsVisited-1; // -1 since we dont count start node
+
             return true; 
 
         }else if(cell == 0){
             gameField.grid[index] = 4;
-
-            //add new possible path
-            pathQueueCurrent.unshift(new Path(index, path));
-
             displayNewNode(i,j);
-
             return false;
 
         }
-    }
-    return false;
 }
 
-let nodes = new Array();
 
-function newbfs(){
-    var path;
-    var index;
-    var i;
-    var j;
-   
-   
-   while(pathQueue.length > 0){
-    
-        path = pathQueue.pop();
-    
-        index = path.index;
-    
-        nodes.push(index);
-    
-        indices = getIndicesFromIndex(index);
-        i = indices[0];
-        j = indices[1];
+function bfs(){
 
-        //check above
-        if (newVisitCell(i-1, j, path)) return true;
-
-        //check right
-        if (newVisitCell(i, j+1, path)) return true;
-
-        //check below
-        if (newVisitCell(i+1, j, path)) return true;
-    
-         //check left
-        if (newVisitCell(i,j-1, path)) return true;
+    if(pathSet.length == 0){
+        clearInterval(intervalID);
+        return false;
     }
 
-    //pathQueue = pathQueueCurrent.slice(0, pathQueueCurrent.length);               //check if we can just do = instead of copying
-    pathQueue = pathQueueCurrent;
-    pathQueueCurrent = new Array();
+    var path = pathSet.pop();
+    var index = path.index;
+
+    var indices = getIndicesFromIndex(index);
+    var i = indices[0];
+    var j = indices[1];
+
+    if(visitCell(i,j,path)) return true;
+
+    var neighborIndex;
+
+     //Check Up
+    neighborIndex = getIndex(i-1,j);
+    if(cellIsValid(i-1,j)){
+        pathSet.unshift(new Path(neighborIndex, path));
+        nodes.push(neighborIndex);
+    }    
+     //Check Right
+    neighborIndex = getIndex(i,j+1);
+    if(cellIsValid(i,j+1)){
+        pathSet.unshift(new Path(neighborIndex, path));
+        nodes.push(neighborIndex);
+    }
+
+    //Check Down
+    neighborIndex = getIndex(i+1,j);
+    if(cellIsValid(i+1,j)){
+        pathSet.unshift(new Path(neighborIndex, path));
+        nodes.push(neighborIndex);
+    }
+
+    //Check Left
+    neighborIndex = getIndex(i,j-1);
+    if(cellIsValid(i,j-1)){
+        pathSet.unshift(new Path(getIndex(i,j-1), path));
+        nodes.push(neighborIndex);
+    }
+   
+}
+
+
+
+
+function dfs(){
+    if(pathSet.length == 0){
+        clearInterval(intervalID);
+        return false;
+    }
+
+    var path = pathSet.pop();
+
+    //DFS adds paths as it goes, and those paths may become obsolete as the algorithm runs
+    //We avoid all obsolete paths in a while loop to avoid unwanted time between animation steps
+    while(gameField.grid[path.index] == 4){
+        console.log(path.index);
+        path = pathSet.pop();
+    }
+    
+    var index = path.index;
+
+    nodes.push(index);
+
+    var indices = getIndicesFromIndex(index);
+    var i = indices[0];
+    var j = indices[1];
+
+    if(visitCell(i,j,path)) return true;
+
+    //Check Left
+    if(cellIsValid(i,j-1))
+        pathSet.push(new Path(getIndex(i,j-1), path));
+
+    //Check Down
+    if(cellIsValid(i+1,j))
+        pathSet.push(new Path(getIndex(i+1,j), path));
+
+    //Check Right
+    if(cellIsValid(i,j+1))
+        pathSet.push(new Path(getIndex(i,j+1), path));
+
+
+    //Check Up
+    if(cellIsValid(i-1,j))
+        pathSet.push(new Path(getIndex(i-1,j), path));
 
 }
+
+
+//Old version that was faster, wont work now but might wanna make a new fast version
+//function bfsOld(){
+    //     var path;
+    //     var index;
+    //     var i;
+    //     var j;
+       
+    //    while(pathSet.length > 0){
+        
+    //         path = pathSet.pop();
+        
+    //         index = path.index;
+        
+    //         nodes.push(index);
+        
+    //         indices = getIndicesFromIndex(index);
+    //         i = indices[0];
+    //         j = indices[1];
+    
+            
+    
+    
+    //         //Check up
+    //         switch(visitCell(i-1, j, path)){
+    //             //Found the flag!
+    //             case 1: return true;
+    //                 break;
+    //             //New possible path
+    //             case 0: pathSetCurrent.unshift(new Path(getIndex(i-1,j), path));
+    //                 break;
+    //             //Not valid path
+    //             case -1: break;
+    //         }
+    
+    //         //Check right
+    //         switch(visitCell(i, j+1, path)){
+    //             case 1: return true;
+    //                 break;
+    //             case 0: pathSetCurrent.unshift(new Path(getIndex(i,j+1), path));
+    //                 break;
+    //             case -1: break;
+    //         }
+    
+    //         //Check down
+    //         switch(visitCell(i+1, j, path)){
+    //             case 1: return true;
+    //                 break;
+    //             case 0: pathSetCurrent.unshift(new Path(getIndex(i+1,j), path));
+    //                 break;
+    //             case -1: break;
+    //         }
+    
+    //         //Check left
+    //         switch(visitCell(i, j-1, path)){
+    //             case 1: return true;
+    //                 break;
+    //             case 0: pathSetCurrent.unshift(new Path(getIndex(i,j-1), path));
+    //                 break;
+    //             case -1: break;
+    //         }
+    
+    //     }
+    
+    //     pathSet = pathSetCurrent;
+    //     pathSetCurrent = new Array();
+    
+    // }

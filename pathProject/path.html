@@ -9,13 +9,25 @@
   
   <body id = "b">
     <canvas id="window"></canvas>
+    <select id="algorithms">
+        <option value="bfs">BFS</option>
+        <option value="dfs">DFS</option>
+    </select>
+    
     <div>
         <input type="button" id="node" class="under" value="Place Node">
         <input type="button" id="wall" class="under" value="Place Wall">
         <input type="button" id="flag" class="under" value="Place Flag">
         <input type="button" id="start" class="under" value="Start Search">
+        <input type="button" id="clear" class="under" value="Clear Search">
         <input type="button" id="reset" class="under" value="Reset">
     </div>
+
+    Path Length:
+    <strong id="pathLength"> </strong>
+</br>
+    # of Cells Checked: 
+    <strong id="totalCells"></strong>
     
 
     <script src="./src/grid.js"></script> 
